@@ -1,0 +1,23 @@
+{
+  "name": "tetris-game",
+  "version": "0.0.1",
+  "description": "Tetris Game with Canvas",
+  "main": "postcss.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/petroniuss/tetris-game.git"
+  },
+  "keywords": [],
+  "author": "petar <petar.non@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/petroniuss/tetris-game/issues"
+  },
+  "homepage": "https://github.com/petroniuss/tetris-game#readme",
+  "dependencies": {
+    "@babel/polyfill": "^7.0.0"
+  }
+}
