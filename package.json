@@ -4,8 +4,8 @@
   "description": "Tetris Game with Canvas",
   "main": "src/index.js",
   "scripts": {
-    "dev": "webpack-dev-server --mode development --progress --open",
-    "build": "webpack --mode production"
+    "dev": "webpack-dev-server --mode development -d --progress --open",
+    "build": "webpack -p"
   },
   "repository": {
     "type": "git",

@@ -1,9 +1,8 @@
 const path = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
 const CleanWebpackPlugin = require('clean-webpack-plugin')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
 
-const env = process.env.NODE_ENV || 'development'
 
 module.exports = {
     entry: {
@@ -13,10 +12,13 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
         filename: 'js/[name].js'
     },
-    devtool: 'source-map',
+    devtool: 'cheap-module-eval-source-map',
     devServer: {
         contentBase: path.resolve(__dirname, 'dist'),
         port: 4400,
+        historyApiFallback: true,
+        hot: true,
+        index: 'index.html',
         overlay: true
     },
     module: {
@@ -35,8 +37,9 @@ module.exports = {
             template: './src/index.html',
             filename: 'index.html'
         }),
+        new webpack.HotModuleReplacementPlugin(),
         new webpack.DefinePlugin({
-            'process.env': { NODE_ENV: JSON.stringify(env) }
+            'process.env.NODE_ENV': JSON.stringify('development')
         })
     ],
     optimization: {
