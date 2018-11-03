@@ -1,8 +1,8 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const autoprefixer = require('autoprefixer')
-const webpack = require('webpack')
+const CleanWebpackPlugin = require('clean-webpack-plugin')
+const BrowserSyncPlugin = require('browser-sync-webpack-plugin')
+const MiniCssExtraxtPlugin = require('mini-css-extract-plugin')
 
 
 module.exports = {
@@ -11,16 +11,7 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'js/[name].js'
-    },
-    devtool: 'cheap-module-eval-source-map',
-    devServer: {
-        contentBase: path.resolve(__dirname, 'dist'),
-        port: 4400,
-        historyApiFallback: true,
-        hot: true,
-        index: 'index.html',
-        overlay: true
+        filename: 'js/[name].[chunkhash].js'
     },
     module: {
         rules: [
@@ -33,37 +24,31 @@ module.exports = {
                 test: /\.css$/,
                 use: [
                     {
-                      loader: MiniCssExtractPlugin.loader,
-                      options: {
-                        publicPath: "../"
-                      }
-                    },
-                    {
-                        loader: 'css-loader',
+                        loader: MiniCssExtraxtPlugin.loader,
                         options: {
-                            sourceMap: true
+                            publicPath: '../'
                         }
                     },
                     {
-                        loader: 'postcss-loader',
-                        options: {
-                            sourceMap: true
-                        }
+                        loader: 'css-loader'
+                    },
+                    {
+                        loader: 'postcss-loader'
                     }
                 ]
             }
         ]
     },
     plugins: [
+        new CleanWebpackPlugin(['dist']),
+        new MiniCssExtraxtPlugin({
+            filename: "css/[name].[contenthash].css",
+            chunkFilename: "css/[id].[contenthash].css"
+        }),
         new HtmlWebpackPlugin({
             template: './src/index.html',
             filename: 'index.html'
-        }),
-        new MiniCssExtractPlugin({
-            filename: "css/[name].css",
-            chunkFilename: "css/[id].css"
-        }),
-        new webpack.HotModuleReplacementPlugin()
+        })
     ],
     optimization: {
         runtimeChunk: 'single',
@@ -84,6 +69,6 @@ module.exports = {
         }
     },
     resolve: {
-        extensions: [".js","css"]
+        extensions: [".js", "css"]
     },
 }

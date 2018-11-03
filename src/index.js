@@ -1,68 +1,82 @@
+import './css/main.css'
 import {
-    createGameGrid
+    createGameArea, getComponentByType
 } from './utils'
 import {
     colorMap
 } from './utils/colorMap'
-import getTetraminoMatrix from './utils/tetraminos'
 
-// canvas container
-const container = document.querySelector('#container')
+// canvas holder
+const gameHolder = document.querySelector('#gameHolder')
+const overlay = document.querySelector('#overlay')
 
 /**
  * Game Object
- * @type {{canvas: HTMLElement, start: Game.start, clear: Game.clear}}
+ * @type {{canvas: HTMLElement, init: Game.init, start: Game.start, clear: Game.clear}}
  */
 const Game = {
-    canvas: document.createElement('canvas'),
+    canvas: null,
     animationFrameId: null,
+    running: null,
     dropCounter: 0,
+    level: 1,
+    acceleration: 0.02,
     dropInterval: 1000,
     lastRefreshTime: 0,
     score: 0,
-    area: {
-        matrix: createGameGrid(20, 30),
-        offset: { x: 0, y: 0 }
-    },
+    area: null,
     piece: {
         matrix: null,
         offset: { x: 0, y: 0 }
     },
+    init: function() {
+        // create canvas and inject
+        this.canvas = document.createElement('canvas')
+        // set dimensions of canvas
+        this.canvas.width = gameHolder.clientWidth
+        this.canvas.height = gameHolder.clientHeight
+        // insert canvas element
+        gameHolder.insertAdjacentElement('afterbegin', this.canvas)
+        // create game area grid
+        this.area = createGameArea(20, 30)
+    },
     start: function() {
-        // set canvas dimensions
-        this.canvas.width = container.clientWidth
-        this.canvas.height = container.clientHeight
+        // init game
+        this.init()
         // get context
         this.context = this.canvas.getContext('2d')
         // scale canvas context
         this.context.scale(20, 20)
-        // insert canvas into container div
-        container.appendChild(this.canvas)
         // reset piece to starting point
         this.resetGamePiece()
         // run animation loop
         animate()
+        // set running flag to true
+        this.running = true
+        keyboardControler()
     },
     clear: function() {
-        this.context.fillStyle = colorMap[0][0]
+        this.context.fillStyle = colorMap[0].bgColor
         this.context.fillRect(0, 0, this.canvas.width, this.canvas.height)
     },
     resetGamePiece() {
         const components = 'IJLOSTZ'
-        this.piece.matrix = getTetraminoMatrix(components[components.length * Math.random() | 0])
-        this.piece.offset.x = (this.area.matrix[0].length / 2 | 0) - (this.piece.matrix[0].length / 2 | 0)
+        this.piece.matrix = getComponentByType(components[components.length * Math.random() | 0])
+        this.piece.offset.x = (this.area[0].length / 2 | 0) - (this.piece.matrix[0].length / 2 | 0)
         this.piece.offset.y = 0
-        if (collide(this.area.matrix, this.piece)) {
-            this.area.matrix.forEach(row => row.fill(0))
+        if (collide(this.area, this.piece)) {
+            this.area.forEach(row => row.fill(0))
             // reset score
             this.score = 0
+            this.level = 1
+            this.dropInterval = 1000
         }
     }
 }
 
 // Definition
 function areaSwipe() {
-    const gameArea = Game.area.matrix
+    const gameArea = Game.area
     let rowCount = 1
     outer: for (let y = gameArea.length - 1; y > 0; y--) {
         for (let x = 0; x < gameArea[y].length; x++) {
@@ -78,14 +92,24 @@ function areaSwipe() {
         // set score
         Game.score += rowCount * 10
         rowCount *= 2
+
+        // level up on score checkpoint
+        if (Game.score > (Math.pow(Game.level, 2) * 1000)) {
+            Game.level++
+            Game.dropInterval -= Game.dropInterval * Game.acceleration
+        }
     }
 }
 
-function drawScore(context, score) {
-    context.fillStyle = colorMap[0][1]
-    context.textAlign= "end"
-    context.font="0.05rem Arial"
-    context.fillText(`Score: ${score} `, 20, 1)
+function drawScore(score, level) {
+    Game.context.fillStyle = colorMap[0].textColor
+    Game.context.textAlign = "end"
+    Game.context.font = "0.05rem Arial"
+    Game.context.fillText(`Score: ${score} `, 20, 1)
+    Game.context.fillStyle = colorMap[0].levelTextColor
+    Game.context.textAlign = "end"
+    Game.context.font = "0.035rem Arial"
+    Game.context.fillText(`Level: ${level} `, 20 , 2)
 }
 
 function drawComponent(matrix, offset) {
@@ -132,9 +156,9 @@ function merge(gameArea, gamePiece) {
 // component movement
 function componentDrop() {
     Game.piece.offset.y++
-    if (collide(Game.area.matrix, Game.piece)) {
+    if (collide(Game.area, Game.piece)) {
         Game.piece.offset.y--
-        merge(Game.area.matrix, Game.piece)
+        merge(Game.area, Game.piece)
         Game.resetGamePiece()
         areaSwipe()
     }
@@ -143,7 +167,7 @@ function componentDrop() {
 
 function componentMove(offset) {
     Game.piece.offset.x += offset
-    if (collide(Game.area.matrix, Game.piece)) {
+    if (collide(Game.area, Game.piece)) {
         Game.piece.offset.x -= offset
     }
 }
@@ -152,10 +176,10 @@ function componentMove(offset) {
 function componentRotate(dir) {
     // current game piece
     let component = Game.piece
+    // game grid
+    let area = Game.area
     // cache position x on rotate
     let positionX = component.offset.x
-    // game grid
-    let area = Game.area.matrix
     let offset = 1
     rotate(component.matrix, dir)
     while (collide(area, component)) {
@@ -197,16 +221,16 @@ function draw() {
 
 
     // draw game area
-    drawComponent(Game.area.matrix, Game.area.offset)
+    drawComponent(Game.area, { x: 0, y: 0 })
     // draw game components
     drawComponent(Game.piece.matrix, Game.piece.offset)
 
     // draw game score
-    drawScore(Game.context, Game.score)
+    drawScore(Game.score, Game.level)
 
 }
 
-// Animation loop Game.animationFrameId =
+// Animation loop
 function animate(time = 0) {
     let deltaTime = time - Game.lastRefreshTime
     Game.lastRefreshTime = time
@@ -218,31 +242,43 @@ function animate(time = 0) {
 
     // init game components and start loop
     draw()
-    requestAnimationFrame(animate)
+    Game.animationFrameId = requestAnimationFrame(animate)
 }
 
-// controler event handlers
-document.addEventListener('keydown', (e) => {
-    switch (e.keyCode) {
-        case 37:
-            componentMove(-1)
-            break
-        case 39:
-            componentMove(1)
-            break
-        case 40:
-            componentDrop()
-            break
-        case 38:
-            // rotate to right
-            componentRotate(1)
-            // rotate to left
-            // componentRotate(-1)
-            break
-    }
-})
 
-
+function keyboardControler() {
+    // controler event handlers
+    document.addEventListener('keydown', (e) => {
+        switch (e.keyCode) {
+            case 37: // left arrow
+                componentMove(-1)
+                break
+            case 39: // right arrow
+                componentMove(1)
+                break
+            case 40: // down arrow
+                componentDrop()
+                break
+            case 38: // up arrow
+                // rotate to right
+                componentRotate(1)
+                // rotate to left
+                // componentRotate(-1)
+                break
+            case 32: // spacebar
+                if (Game.running) {
+                    cancelAnimationFrame(Game.animationFrameId)
+                    overlay.classList.add('animate-overlay')
+                    Game.running = false
+                } else {
+                    overlay.classList.remove('animate-overlay')
+                    animate()
+                    Game.running = true
+                }
+                break
+        }
+    })
+}
 
 
 document.addEventListener('DOMContentLoaded', () => {
