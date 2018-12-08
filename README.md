@@ -1,1 +1,1 @@
-Tetris Game with Canvas
+Javascript powered Tetris Game with Canvas
